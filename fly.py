@@ -152,19 +152,21 @@ def modearmtakeoff():
         time.sleep(1)
 
     print "modearmtakeoff: "+str(datetime.datetime.now()) + "ARMED"
-
     print "modearmtakeoff: "+str(datetime.datetime.now()) + "attempting TAKEOFF to 20m"
-    mavDrone.commands.takeoff(consts.TAKEOFF_ALT)   #quad.takeoffalt
 
+    mavDrone.commands.takeoff(consts.TAKEOFF_ALT)   #quad.takeoffalt
     reached = False
     cloudconn.addflight()
-
+    cloudconn.updateCloud(mavDrone, consts.TAKING_OFF)
     while reached == False:
         print "modearmtakeoff: "+str(datetime.datetime.now()) + " current altitude is "+ str(mavDrone.location.global_frame.alt)
-        if mavDrone.location.global_frame.alt >= consts.TAKEOFF_ALT*consts.PRECISION:
+        if mavDrone.location.global_relative_frame.alt >= consts.TAKEOFF_ALT*consts.PRECISION:
             print "HURRO"
             reached = True
+        else:
+            time.sleep(1)
 
+    cloudconn.updateCloud(mavDrone, consts.AWAITING_INST)
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " setting quad to LOITER"
     mavDrone.mode = "LOITER"
     return True
@@ -179,19 +181,17 @@ This is the main function
 '''
 def fly():
     global mavDrone
-
     #Run Prearmchecks
     while(prearmChecks() == False):
         print "fly: " + str(datetime.datetime.now()) + " waiting on prearmchecks()"
         time.sleep(1)
-
 
     print "fly: " + str(datetime.datetime.now()) + " ARMING MOTORS"
     modearmtakeoff()
 
 
 
-    reservation_destination = LocationGlobal(40.096309, -88.217972, 10, is_relative=True)
+    #reservation_destination = LocationGlobal(40.096309, -88.217972, 10, is_relative=True)
 
 
 

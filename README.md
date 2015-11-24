@@ -5,6 +5,8 @@
 3. Setup simulator on RPi2
 4. Make PX4 to RPI connections
 
+allow pg to reconnect on a broken network
+
 #Config CC
 
 1. Setup UMTSKeeper
@@ -16,7 +18,7 @@
 
 
 
-#Airside 
+##Airside 
 
 
 ##FLIGHTS TABLE

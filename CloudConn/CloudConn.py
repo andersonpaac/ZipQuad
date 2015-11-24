@@ -128,9 +128,16 @@ class CloudConn:
         self.cur = self.conn.cursor()
         self.mav_id = mav_id
         self.cons = constize.Constant()
+        self.flt_id = self.cons.UNINIT
 
     #Should send location, status(mission, failsafe, available, RTH), battery, velocity, RESSTART
-    #def updateCloud(self):
+    def updateCloud(self, mavDrone, status):
+        location = mavDrone.location_global_relative_frame
+        timenow = datetime.datetime.now()
+        tname = "flt_"+ str(self.flt_id)
+        try:
+            SQL = "INSERT INTO "+tname+" VALUES (%s,%s,%s)"
+            values = (timenow, location, status)
 
 
     #Remove message from queue
@@ -138,7 +145,7 @@ class CloudConn:
 
 
     def addflight(self):
-        print "CloudConn: Received request for flight creation"
+        print "CloudConn::addflight Received request for flight creation"
         #Create a record in flights
         self.cur.execute("SELECT count(*) from flights;")
         count = int(self.cur.fetchall()[0][0])
@@ -151,9 +158,12 @@ class CloudConn:
             SQL = "CREATE TABLE flt_" + id +" (mav_time timestamp, location varchar(50), status integer)"
             self.cur.execute(SQL)
             self.conn.commit()
+            print "CloudConn::addflight Success Created Table for flight"
+            return self.cons.SUCCESS, self.cons.SUCCESS
 
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-            print "CloudConn: ERROR: Unable to create table "
+            print "CloudConn::addflight ERROR: Unable to create table "
             print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
 
