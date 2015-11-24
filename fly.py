@@ -166,6 +166,14 @@ def modearmtakeoff():
     mavDrone.mode = "LOITER"
     return True
 
+
+
+'''
+
+
+This is the main function
+
+'''
 def fly():
     global mavDrone
 
@@ -178,8 +186,10 @@ def fly():
     print "fly: " + str(datetime.datetime.now()) + " ARMING MOTORS"
     modearmtakeoff()
 
+
+
     reservation_destination = LocationGlobal(40.096309, -88.217972, 10, is_relative=True)
-    mavDrone.commands.goto(reservation_destination)
+
 
 
 
