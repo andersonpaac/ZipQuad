@@ -21,11 +21,11 @@
 
 ##FLIGHTS TABLE
 
-mavid-          ID of vehicle - {132: Simulator, 445:   Quad}
-flightid        ID of flight
-start           Local time of flight start
-end             Local time at end of flight
-status          Status of flight    
+mav_id-          ID of vehicle - {132: Simulator, 445:   Quad}
+flt_id        ID of flight
+flt_start           Local time of flight start
+flt_end             Local time at end of flight
+flt_status          Status of flight    
                                     201 Success
                                     301 Override
                                     401 FAILSAFE
@@ -49,7 +49,7 @@ resid       if status is 101 or 201    reservation id
                                 599 battery 
                                 610 didn't take off
 
-mavid   time    location    status      resid
+mav_time    location    status      resid
 
 
 

@@ -97,16 +97,63 @@ QUAD:
 
 
 '''
+import psycopg2 as pg
+import datetime
+from datetime import datetime
+from Constants import constize
+import os
+
+
+'''
+    Network
+        conn -> connection
+        cur  -> cursor
+
+    Flight variables
+        mav_id  ->  Simulator or quad
+        flt_id  ->  Flight ID
+
+
+
+
+'''
 class CloudConn:
 
     #Make connection
-    def __init__(self):
-
-
+    def __init__(self, mav_id):
+        diction = dict(os.environ)
+        pwd = diction["ZIPQUAD_PWD"]
+        hostip = diction["ZIPQUAD_IP"]
+        self.conn = pg.connect(database="zipquad", user="airside", host=hostip, password=pwd)
+        self.cur = self.conn.cursor()
+        self.mav_id = mav_id
+        self.cons = constize.Constant()
 
     #Should send location, status(mission, failsafe, available, RTH), battery, velocity, RESSTART
-    def updateCloud(self):
+    #def updateCloud(self):
 
 
     #Remove message from queue
-    def checkcloud(self):
+    #def checkcloud(self):
+
+
+    def addflight(self):
+        print "CloudConn: Received request for flight creation"
+        #Create a record in flights
+        self.cur.execute("SELECT count(*) from flights;")
+        count = int(self.cur.fetchall()[0][0])
+        id = count + 1
+        self.flt_id = id
+        self.cur.execute("INSERT INTO flights VALUES(%s,%s,%s,%s,%s)",(self.mav_id, id, datetime.datetime.now(), self.cons.time_UNINIT, self.cons.UNINIT))
+
+        #Create a table for this flight
+        try:
+            SQL = "CREATE TABLE flt_" + id +" (mav_time timestamp, location varchar(50), status integer)"
+            self.cur.execute(SQL)
+            self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn: ERROR: Unable to create table "
+            print e
+
+

@@ -107,10 +107,12 @@ from dronekit import connect
 from dronekit.lib import VehicleMode, LocationGlobal
 from pymavlink import mavutil
 import time
-
+from CloudConn import  CloudConn
 #INITIALIZATIONS
 mavDrone = mav.connect('127.0.0.1:14550', wait_ready=True)
 consts = Constant()
+cloudconn = CloudConn.CloudConn(consts.MAV_ID_ACTUAL)
+
 
 def check(PREARM_MSG):
     return True
@@ -152,13 +154,14 @@ def modearmtakeoff():
     print "modearmtakeoff: "+str(datetime.datetime.now()) + "ARMED"
 
     print "modearmtakeoff: "+str(datetime.datetime.now()) + "attempting TAKEOFF to 20m"
-    mavDrone.commands.takeoff(20)   #quad.takeoffalt
+    mavDrone.commands.takeoff(consts.TAKEOFF_ALT)   #quad.takeoffalt
 
     reached = False
+    cloudconn.addflight()
 
     while reached == False:
         print "modearmtakeoff: "+str(datetime.datetime.now()) + " current altitude is "+ str(mavDrone.location.global_frame.alt)
-        if mavDrone.location.global_frame.alt >= 20*0.95:
+        if mavDrone.location.global_frame.alt >= consts.TAKEOFF_ALT*consts.PRECISION:
             print "HURRO"
             reached = True
 
