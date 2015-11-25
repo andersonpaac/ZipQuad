@@ -36,12 +36,11 @@ def getdata():
 
 def options():
     if gs.isRes():
-        print "You've a reservation with id "+gs.res_id
+        print "You've a reservation with id "+str(gs.res_id)
         print "0. Cancel your reservation"
         print "1. Change your reservation"
         print "2. Change your bearing"
         print "3. Change your altitude"
-        print "4. Create a new reservation(executed after)"
         print "999. Exit"
         opt = raw_input("Enter your option:\n")
         try:
@@ -112,14 +111,23 @@ def options():
                     print "Your reservation has been created"
                 else:
                     print "DB is not reachable at this time"
+        elif inpt == "445":
+            override = raw_input("Enter access code for OVERRIDE\n")
+            stat,val = gs.override(override)
+            if stat==consts.SUCCESS:
+                print "Your OVERRIDE code is accepted"
+            elif stat==consts.OVR_AUTH_FAIL:
+                print "Authentication failure"
+            elif stat==consts.DB_NOT_REACH:
+                print "Auth Succesful but unable to realize DBConn"
+
         else:
             return -1
-
     return 0
 
 
 def main():
-    ext = False
+    ext = True
     welcome()
     while ext == True:
         retval = options()
@@ -127,4 +135,4 @@ def main():
             ext = False
 
 main()
-
+#41.283432, -73.077111

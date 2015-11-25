@@ -42,6 +42,7 @@ class Constant:
         self.time_UNINIT    =   datetime.datetime(1993,6,3,23,47,12)
         self.SUCCESS        =   200
         self.DB_NOT_REACH   =   -911
+        self.NO_UPDATE      =   350
 
 
 
@@ -63,6 +64,7 @@ class Constant:
         self.TIME_LOC_CALLB =   5
         self.time_ARM       =   0.2
         self.time_TKOFF     =   0.2
+        self.MIS_LOOKAHEAD  =   600         #Number of seconds before now for valid missions
 
         #NETWORKING AND THROTTLING
         self.NETWORK_FRQ    =   3           #Frequency of updates
@@ -70,8 +72,21 @@ class Constant:
 
         #GROUND END
         self.MTYPE_RES_REQ  =   6000
-        self.MTYPE_OVR      =   6100
-        self.MTYPE_FS       =   6200
-        self.MTYPE_RES_CNCL =   6300
-        self.MTYPE_RES_CHG  =   6400
-        self.MTYPE_RES_YAW  =   6500
+        self.MTYPE_RES_CNCL =   6100
+        self.MTYPE_RES_CHG  =   6200
+        self.MTYPE_RES_YAW  =   6300
+        self.MTYPE_RES_DND  =   6400        #Cloud denied the request to service as it was either canceled or due to out of bounds
+        self.MTYPE_RES_ACK  =   6500        #Cloud has acknowledged the request of this reservation and is en route
+        self.MTYPE_OVR      =   6600
+        self.MTYPE_FS       =   6700
+
+
+        #RESERVATIONS_INDICES
+        self.IND_MIS_TYPE   =   0
+        self.IND_MIS_TIME   =   1
+        self.IND_MIS_ID     =   2
+        self.IND_WP_LAT     =   3
+        self.IND_WP_LON     =   4
+        self.IND_WP_ALT     =   5
+        self.IND_WP_DUR     =   6
+        self.IND_WP_BEARING =   7

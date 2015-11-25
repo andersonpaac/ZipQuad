@@ -139,6 +139,162 @@ class CloudConn:
         self.res_id = self.cons.UNINIT
         self.on_ovr = self.cons.UNINIT
 
+    def getoverrides(self):
+        #If there's an override -> None of this matters
+        now = datetime.datetime.now() - datetime.timedelta(seconds=self.cons.MIS_LOOKAHEAD)
+        SQL = "SELECT * FROM reservations WHERE mission_time >= %s AND mission_type = %s"
+        values = (now, self.cons.MTYPE_OVR)
+        try:
+            self.cur.execute(SQL,values)
+            self.conn.commit()
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::getMissions ERROR: Unable to read from reservations"
+            print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        data = self.cur.fetchall()
+        if len(data) > 0:
+            return self.cons.SUCCESS, True
+
+        return self.cons.SUCCESS, False
+
+    def getresreqs(self):
+        now = datetime.datetime.now() - datetime.timedelta(seconds=self.cons.MIS_LOOKAHEAD)
+        SQL = "SELECT * FROM reservations WHERE mission_time >= %s AND mission_type = %s ORDER BY mission_time ASC LIMIT 1"
+        query = (now, self.cons.MTYPE_RES_REQ)
+        try:
+            self.cur.execute(SQL,query)
+            self.conn.commit()
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::getmissions ERROR: Unable to read from reservations"
+            print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+        data = self.cur.fetchall()
+        if len(data)>0:
+            return self.cons.SUCCESS, {"stat":True, "id":data[0][self.cons.IND_MIS_ID]}
+        return self.cons.SUCCESS, {"stat":False}
+
+
+    def isReqCNCL(self, id):
+        SQL = "SELECT * FROM reservations WHERE mission_id = %s  AND mission_type = %s"
+        values = (id, self.cons.MTYPE_RES_CNCL)
+        try:
+                self.cur.execute(SQL,values)
+                self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::getmissions ERROR: Unable to read from reservations"
+                print e
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        dat_cncl = self.cur.fetchall()
+        #Remove this entry and return
+        if len(dat_cncl) > 0:
+            return self.cons.SUCCESS, True
+        return self.cons.SUCCESS, False
+
+
+    def denyall(self, id):
+        print "CloudConn::getmissions The mission was created but canceled"
+        SQL  = "UPDATE reservations SET mission_type = %s where mission_id = %s"
+        values = (self.cons.MTYPE_RES_DND, id)
+        try:
+            self.cur.execute(SQL,values)
+            self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::getmissions ERROR: Unable to read from reservations"
+            print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        return self.cons.SUCCESS, True
+
+    def getlatestchange(self, id):
+        SQL = "SELECT * FROM reservations WHERE mission_id = %s  AND mission_type = %s ORDER BY mission_time DESC LIMIT 1"
+        values = (id, self.cons.MTYPE_RES_CHG)
+        try:
+                self.cur.execute(SQL,values)
+                self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::getmissions ERROR: Unable to read from reservations"
+                print e
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        dat_chg = self.cur.fetchall()
+        if len(dat_chg) > 0:
+            val = dat_chg[0]
+            print val
+            lat = float(val[self.cons.IND_WP_LAT])
+            lon = float(val[self.cons.IND_WP_LON])
+            alt = val[self.cons.IND_WP_ALT]
+            dur = val[self.cons.IND_WP_DUR]
+            bearing = val[self.cons.IND_WP_BEARING]
+            loctoret = mav.LocationGlobal(lat, lon, 0, is_relative=True)
+            #Set mission type for all instances of this id to acknowledged
+            SQL  = "UPDATE reservations SET mission_type = %s where mission_id = %s"
+            values = (self.cons.MTYPE_RES_ACK, id)
+            try:
+                self.cur.execute(SQL,values)
+                self.conn.commit()
+                return self.cons.SUCCESS, {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":id}
+
+            except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::getmissions ERROR: Unable to read from reservations"
+                print e
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        return self.cons.SUCCESS, {"stat":False}
+
+
+
+
+    #Call this when you're awaiting instructions
+    #Must return locglobal, alt, bearing, resid
+    #Scenarios
+    #   Awaiting instructions gets override
+    #   Awaiting instructions gets a new reservation -> make sure this is the first reservation FIFO
+    #                                                   make sure changes have not been made to this reservation
+    #                                                   make sure same reservation isn't done twice{change mtype}
+
+    def getmissions(self):
+        #Get overrides
+        stat, val = self.getoverrides()
+        if stat == self.cons.SUCCESS:
+            if val == True:
+                print "CloudConn:getmissions: Found an override"
+                return self.cons.ZIP_OVERRIDE, self.cons.ZIP_OVERRIDE
+
+        #No overrides get reservations
+        stat, val = self.getresreqs()
+        if stat == self.cons.SUCCESS and val["stat"] == True:
+            print "CloudConn:getmissions: Found a reservation request"
+            res_id = val["id"]
+            lat = float(val[self.cons.IND_WP_LAT])
+            lon = float(val[self.cons.IND_WP_LON])
+            alt = val[self.cons.IND_WP_ALT]
+            dur = val[self.cons.IND_WP_DUR]
+            bearing = val[self.cons.IND_WP_BEARING]
+            loctoret = mav.LocationGlobal(lat, lon, 0, is_relative=True)
+            dicttoret = {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":id}
+
+            #Check if canceled
+            stat, val = self.isReqCNCL(res_id)
+            if stat == self.cons.SUCCESS and val == True:
+                print "CloudConn:getmissions: The reservation was canceled, denying request"
+                self.denyall(res_id)
+                return self.cons.NO_UPDATE, self.cons.NO_UPDATE
+
+            #Check if changed
+            stat, val = self.getlatestchange(res_id)
+            if stat == self.cons.SUCCESS and val["stat"]==True:
+                print "CloudConn:getmissions: The reservation was changed"
+                return self.cons.SUCCESS, val
+
+            #Not canceled, Not changed
+            return self.cons.SUCCESS, dicttoret
+
+        return self.cons.NO_UPDATE, self.cons.NO_UPDATE
 
 
     def locationglobaltostringpg(self, locationglobal):
@@ -190,16 +346,15 @@ class CloudConn:
     #wp_dur is in seconds
     #wp_alt is relative
     #wp_lat,wp_lon is string
-    def createreservation(self, wp_lat, wp_lon, wp_alt, wp_dur, bearing):
+    def createreservation(self, wp_lat, wp_lon, wp_alt, wp_dur, wp_bearing):
         self.cur.execute("SELECT count(*) from reservations;")
         count = int(self.cur.fetchall()[0][0])
         id = count + 1
         self.res_id = id
-        self.cur.execute()
         try:
-            SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+            SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
             now = datetime.datetime.now()
-            values = (self.cons.MTYPE_RES_REQ, now, self.res_id, wp_lat, wp_lon, wp_alt, wp_dur)
+            values = (self.cons.MTYPE_RES_REQ, now, self.res_id, wp_lat, wp_lon, wp_alt, wp_dur, wp_bearing)
             self.cur.execute(SQL,values)
             self.conn.commit()
             print "CloudConn::createreservation success created reservation"
@@ -211,7 +366,7 @@ class CloudConn:
 
     #@todo Uninitialized reservation id
     def changereservation(self,  wp_lat, wp_lon, wp_alt, wp_dur, bearing):
-        SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+        SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
         now = datetime.datetime.now()
         values = (self.cons.MTYPE_RES_CHG, now, self.res_id, wp_lat, wp_lon, wp_alt, wp_dur, bearing)
         try:
@@ -233,7 +388,7 @@ class CloudConn:
             try:
                 wp_lat = ""
                 bearing = 0.0
-                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
                 now = datetime.datetime.now()
                 values = (self.cons.MTYPE_OVR, now, self.cons.ZIP_OVERRIDE, wp_lat, wp_lat, 0 , 0, bearing)
                 self.cur.execute(SQL, values)
@@ -253,7 +408,7 @@ class CloudConn:
     def changebearing(self,bearing):
         try:
                 wp_lat = ""
-                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
                 now = datetime.datetime.now()
                 values = (self.cons.MTYPE_RES_YAW, now, self.res_id, wp_lat, wp_lat, 0 , 0, bearing)
                 self.cur.execute(SQL, values)
@@ -274,7 +429,7 @@ class CloudConn:
             cnclafter = True
         try:
                 wp_lat = ""
-                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
                 now = datetime.datetime.now()
                 bearing = 0.0
                 values = (self.cons.MTYPE_RES_CNCL, now, res_id, wp_lat, wp_lat, 0 , 0, bearing)

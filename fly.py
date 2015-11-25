@@ -4,16 +4,22 @@ __author__ = 'asc-mbp'
 
 '''
 @todo
-BUILD GROUND END                                            In progress
+BUILD GROUND END                                            Part 1 complete , Part 2(status remaining)
+Air end reservations
 WP_BEARING, yaw translation, default bearing
-Build reservation
-Build overrides
-build multiple reservations
 do flt_end
-ALT relative issues
 Support for time and latest
-Build for BIF
 Override location
+
+@observe
+ALT relative issues
+
+@tests:
+Network intolerance
+Test reservation
+Test overrides
+Test BIF
+Test multiple reservations
 '''
 '''
     conn = CloudConn()
