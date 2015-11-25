@@ -171,7 +171,7 @@ class CloudConn:
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
         data = self.cur.fetchall()
         if len(data)>0:
-            return self.cons.SUCCESS, {"stat":True, "id":data[0][self.cons.IND_MIS_ID]}
+            return self.cons.SUCCESS, {"stat":True, "id":data[0][self.cons.IND_MIS_ID], "data":data[0]}
         return self.cons.SUCCESS, {"stat":False}
 
 
@@ -195,9 +195,22 @@ class CloudConn:
 
 
     def denyall(self, id):
-        print "CloudConn::getmissions The mission was created but canceled"
         SQL  = "UPDATE reservations SET mission_type = %s where mission_id = %s"
         values = (self.cons.MTYPE_RES_DND, id)
+        try:
+            self.cur.execute(SQL,values)
+            self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::getmissions ERROR: Unable to read from reservations"
+            print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        return self.cons.SUCCESS, True
+
+    def ackall(self, id):
+        SQL  = "UPDATE reservations SET mission_type = %s where mission_id = %s"
+        values = (self.cons.MTYPE_RES_ACK, id)
         try:
             self.cur.execute(SQL,values)
             self.conn.commit()
@@ -224,7 +237,6 @@ class CloudConn:
         dat_chg = self.cur.fetchall()
         if len(dat_chg) > 0:
             val = dat_chg[0]
-            print val
             lat = float(val[self.cons.IND_WP_LAT])
             lon = float(val[self.cons.IND_WP_LON])
             alt = val[self.cons.IND_WP_ALT]
@@ -269,14 +281,15 @@ class CloudConn:
         stat, val = self.getresreqs()
         if stat == self.cons.SUCCESS and val["stat"] == True:
             print "CloudConn:getmissions: Found a reservation request"
+            valsreq = val["data"]
             res_id = val["id"]
-            lat = float(val[self.cons.IND_WP_LAT])
-            lon = float(val[self.cons.IND_WP_LON])
-            alt = val[self.cons.IND_WP_ALT]
-            dur = val[self.cons.IND_WP_DUR]
-            bearing = val[self.cons.IND_WP_BEARING]
+            lat = float(valsreq[self.cons.IND_WP_LAT])
+            lon = float(valsreq[self.cons.IND_WP_LON])
+            alt = valsreq[self.cons.IND_WP_ALT]
+            dur = valsreq[self.cons.IND_WP_DUR]
+            bearing = valsreq[self.cons.IND_WP_BEARING]
             loctoret = mav.LocationGlobal(lat, lon, 0, is_relative=True)
-            dicttoret = {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":id}
+            dicttoret = {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":res_id}
 
             #Check if canceled
             stat, val = self.isReqCNCL(res_id)
@@ -291,7 +304,9 @@ class CloudConn:
                 print "CloudConn:getmissions: The reservation was changed"
                 return self.cons.SUCCESS, val
 
+
             #Not canceled, Not changed
+            self.ackall(res_id)
             return self.cons.SUCCESS, dicttoret
 
         return self.cons.NO_UPDATE, self.cons.NO_UPDATE
