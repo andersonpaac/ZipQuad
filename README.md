@@ -21,7 +21,7 @@ allow pg to reconnect on a broken network
 ##Airside 
 
 
-##FLIGHTS TABLE
+###FLIGHTS TABLE
 
 mav_id-          ID of vehicle - {132: Simulator, 445:   Quad}
 flt_id        ID of flight
@@ -38,7 +38,7 @@ landloc         GPS Coordinates at land
 
 flightid        mavid      start       end     status   takeoffloc      landloc
 
-##FLT_ID
+###FLT_ID
 
 status  status of flight
                             101     In route to a reservation wp
@@ -52,6 +52,17 @@ resid       if status is 101 or 201    reservation id
                                 610 didn't take off
 
 mav_time    location    status      resid
+
+
+
+
+##Ground End
+
+MISSION TYPE    MISSION ID  WP_DATA    DURATION
+    RES             12       WP         3
+    OVERRIDE        -1       WP
+    RES_CNCL
+    RES_CHG      
 
 
 

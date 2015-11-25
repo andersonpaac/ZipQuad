@@ -100,7 +100,6 @@ QUAD:
 
 import dronekit as mav
 import datetime
-from datetime import  datetime
 from Constants.constize import Constant
 from dronekit import *
 from dronekit import connect
@@ -108,10 +107,20 @@ from dronekit.lib import VehicleMode, LocationGlobal
 from pymavlink import mavutil
 import time
 from CloudConn import  CloudConn
+from Quad import quad
+
 #INITIALIZATIONS
-mavDrone = mav.connect('127.0.0.1:14550', wait_ready=True)
+print ":/:MAKING CONNECTION"
+
+
 consts = Constant()
-cloudconn = CloudConn.CloudConn(consts.MAV_ID_ACTUAL)
+############################################################################
+#@INPUTS HERE
+mavid = consts.MAV_ID_SIM
+mavDrone = mav.connect('192.168.1.5:14555', wait_ready=True)
+############################################################################
+cloudconn = CloudConn.CloudConn(mavid)
+zipquad = quad.ZipQuad()
 
 
 def check(PREARM_MSG):
@@ -140,59 +149,64 @@ def prearmChecks():
 
 def modearmtakeoff():
     global mavDrone
-
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " VEHICLE MODE CHANGE TO GUIDED"
-    mavDrone.mode = VehicleMode("GUIDED")
+    mavDrone.mode = mav.VehicleMode("GUIDED")
 
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " attempting to ARM VEHICLE"
     mavDrone.armed = True
 
     while not mavDrone.armed:
         print "modearmtakeoff: "+str(datetime.datetime.now()) + " attempting to ARM VEHICLE"
-        time.sleep(1)
+        time.sleep(0.3)
 
-    print "modearmtakeoff: "+str(datetime.datetime.now()) + "ARMED"
-    print "modearmtakeoff: "+str(datetime.datetime.now()) + "attempting TAKEOFF to 20m"
+    print "modearmtakeoff: "+str(datetime.datetime.now()) + " ARMED"
+    print "modearmtakeoff: "+str(datetime.datetime.now()) + " attempting TAKEOFF to"+str(consts.TAKEOFF_ALT)
+
 
     mavDrone.commands.takeoff(consts.TAKEOFF_ALT)   #quad.takeoffalt
+    print mavDrone.mode.name
     reached = False
+    zipquad.status = consts.TAKING_OFF
+    zipquad.dest = consts.TAKING_OFF
+
     cloudconn.addflight()
-    cloudconn.updateCloud(mavDrone, consts.TAKING_OFF)
+    cloudconn.updateCloud(mavDrone, zipquad)
     while reached == False:
         print "modearmtakeoff: "+str(datetime.datetime.now()) + " current altitude is "+ str(mavDrone.location.global_frame.alt)
-        if mavDrone.location.global_relative_frame.alt >= consts.TAKEOFF_ALT*consts.PRECISION:
-            print "HURRO"
+        if mavDrone.location.global_frame.alt >= consts.TAKEOFF_ALT*consts.PRECISION:
             reached = True
         else:
             time.sleep(1)
 
-    cloudconn.updateCloud(mavDrone, consts.AWAITING_INST)
+    cloudconn.updateCloud(mavDrone, zipquad)
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " setting quad to LOITER"
-    mavDrone.mode = "LOITER"
-    return True
+
+
+    return consts.SUCCESS, consts.SUCCESS
 
 
 
 '''
-
-
 This is the main function
-
 '''
 def fly():
     global mavDrone
     #Run Prearmchecks
+    mavDrone.mode = mav.VehicleMode("POSHOLD")
+    if mavDrone.armed==True and mavid==consts.MAV_ID_SIM:   #This is  a simulator that was already on
+        mavDrone.mode = mav.VehicleMode("RTL")
+        print "fly: Simulator running wasn't closed, needs to go home"
+        while mavDrone.armed:
+            time.sleep(1)
+        print "fly: Simulated quad is back home"
+
     while(prearmChecks() == False):
         print "fly: " + str(datetime.datetime.now()) + " waiting on prearmchecks()"
         time.sleep(1)
 
     print "fly: " + str(datetime.datetime.now()) + " ARMING MOTORS"
     modearmtakeoff()
-
-
-
     #reservation_destination = LocationGlobal(40.096309, -88.217972, 10, is_relative=True)
-
 
 
 

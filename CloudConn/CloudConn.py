@@ -117,6 +117,13 @@ import os
 
 
 '''
+
+import datetime
+
+import dronekit as mav
+import time
+import psycopg2 as pg
+
 class CloudConn:
 
     #Make connection
@@ -131,14 +138,21 @@ class CloudConn:
         self.flt_id = self.cons.UNINIT
 
     #Should send location, status(mission, failsafe, available, RTH), battery, velocity, RESSTART
-    def updateCloud(self, mavDrone, status):
-        location = mavDrone.location_global_relative_frame
+    def updateCloud(self, mavDrone, zipquad):
+        location = str(mavDrone.location.global_frame)[15:60]
         timenow = datetime.datetime.now()
         tname = "flt_"+ str(self.flt_id)
         try:
             SQL = "INSERT INTO "+tname+" VALUES (%s,%s,%s)"
-            values = (timenow, location, status)
+            values = (timenow, location, zipquad.status)
+            self.cur.execute(SQL,values)
+            self.conn.commit()
+            return self.cons.SUCCESS, self.cons.SUCCESS
 
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::addflight ERROR: Unable to create table "
+            print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
     #Remove message from queue
     #def checkcloud(self):
@@ -152,10 +166,10 @@ class CloudConn:
         id = count + 1
         self.flt_id = id
         self.cur.execute("INSERT INTO flights VALUES(%s,%s,%s,%s,%s)",(self.mav_id, id, datetime.datetime.now(), self.cons.time_UNINIT, self.cons.UNINIT))
-
+        self.conn.commit()
         #Create a table for this flight
         try:
-            SQL = "CREATE TABLE flt_" + id +" (mav_time timestamp, location varchar(50), status integer)"
+            SQL = "CREATE TABLE flt_" + str(id) +" (mav_time timestamp, location varchar(50), status integer)"
             self.cur.execute(SQL)
             self.conn.commit()
             print "CloudConn::addflight Success Created Table for flight"
