@@ -136,6 +136,10 @@ class CloudConn:
         self.mav_id = mav_id
         self.cons = constize.Constant()
         self.flt_id = self.cons.UNINIT
+        self.res_id = self.cons.UNINIT
+        self.on_ovr = self.cons.UNINIT
+
+
 
     def locationglobaltostringpg(self, locationglobal):
         return str(locationglobal)[15:]
@@ -153,7 +157,7 @@ class CloudConn:
             return self.cons.SUCCESS, self.cons.SUCCESS
 
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-            print "CloudConn::addflight ERROR: Unable to create table "
+            print "CloudConn::updateCloud ERROR: Unable to INSERT into flt_"+str(self.flt_id)
             print e
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
@@ -183,4 +187,104 @@ class CloudConn:
             print e
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
+    #wp_dur is in seconds
+    #wp_alt is relative
+    #wp_lat,wp_lon is string
+    def createreservation(self, wp_lat, wp_lon, wp_alt, wp_dur, bearing):
+        self.cur.execute("SELECT count(*) from reservations;")
+        count = int(self.cur.fetchall()[0][0])
+        id = count + 1
+        self.res_id = id
+        self.cur.execute()
+        try:
+            SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+            now = datetime.datetime.now()
+            values = (self.cons.MTYPE_RES_REQ, now, self.res_id, wp_lat, wp_lon, wp_alt, wp_dur)
+            self.cur.execute(SQL,values)
+            self.conn.commit()
+            print "CloudConn::createreservation success created reservation"
+            return self.cons.SUCCESS, self.res_id
 
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::createreservation ERROR: unable to insert into reservations"
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+    #@todo Uninitialized reservation id
+    def changereservation(self,  wp_lat, wp_lon, wp_alt, wp_dur, bearing):
+        SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+        now = datetime.datetime.now()
+        values = (self.cons.MTYPE_RES_CHG, now, self.res_id, wp_lat, wp_lon, wp_alt, wp_dur, bearing)
+        try:
+            self.cur.execute(SQL, values)
+            self.conn.commit()
+            print "CloudConn:: changereservation success changed reservation"
+            return self.cons.SUCCESS, self.res_id
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::changereservation ERROR: unable to change reservations"
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+    def isValid(self, override):
+        return True
+
+    #@todo override code
+    def createoverride(self, overridecode):
+        if self.isValid(overridecode):
+            try:
+                wp_lat = ""
+                bearing = 0.0
+                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                now = datetime.datetime.now()
+                values = (self.cons.MTYPE_OVR, now, self.cons.ZIP_OVERRIDE, wp_lat, wp_lat, 0 , 0, bearing)
+                self.cur.execute(SQL, values)
+                self.conn.commit()
+                print "CloudConn:: createoverride success created Override"
+                return self.cons.SUCCESS, self.cons.SUCCESS
+
+            except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::createoverride ERROR: unable to create override USE THE STICKS MATE"
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+        else:
+            return self.cons.OVR_AUTH_FAIL, self.cons.OVR_AUTH_FAIL
+
+
+    #@todo Uninitialized reservation id
+    #UNUSED
+    def changebearing(self,bearing):
+        try:
+                wp_lat = ""
+                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                now = datetime.datetime.now()
+                values = (self.cons.MTYPE_RES_YAW, now, self.res_id, wp_lat, wp_lat, 0 , 0, bearing)
+                self.cur.execute(SQL, values)
+                self.conn.commit()
+                print "CloudConn:: changebearing success created Override"
+                return self.cons.SUCCESS, self.res_id
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::changebearing ERROR: unable to change the bearing"
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+
+    #@todo Uninitialized reservation id
+    def cancelreservation(self,res_id=-1):
+        cnclafter = False
+        if res_id == -1:
+            res_id = self.res_id        #Cancel current reservation
+            cnclafter = True
+        try:
+                wp_lat = ""
+                SQL = "INSERT INTO reservations  VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                now = datetime.datetime.now()
+                bearing = 0.0
+                values = (self.cons.MTYPE_RES_CNCL, now, res_id, wp_lat, wp_lat, 0 , 0, bearing)
+                self.cur.execute(SQL, values)
+                self.conn.commit()
+                print "CloudConn:: cancelreservation success canceled reservation"
+                if cnclafter:
+                    res_id = self.cons.UNINIT
+                return self.cons.SUCCESS, self.cons.SUCCESS
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::CreateRes ERROR: unable to cancel reservation"
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH

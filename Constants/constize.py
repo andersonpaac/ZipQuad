@@ -33,7 +33,7 @@ class Constant:
         #MAV_ID
         self.MAV_ID_SIM     =   1000
         self.MAV_ID_ACTUAL  =   445
-
+        self.GRD_PY         =   455
         #AIRSIDE TIME
 
 
@@ -44,7 +44,17 @@ class Constant:
         self.DB_NOT_REACH   =   -911
 
 
-        #Parameters
+
+        #RES_PARAMS
+        self.FAIL_NOTINRES  =   50
+        self.FAIL_CANT_CNCL =   55
+
+        self.RES_DEF_TIME   =   40
+        self.RES_DEF_ALT    =   20
+        self.RES_DEF_BEAR   =   100
+        self.OVR_AUTH_FAIL  =   -449
+
+        #AIR_PARAMS
         self.TAKEOFF_ALT    =   5           #In meters
         self.PRECISION      =   0.95        #Overshoot control for altitude
         self.WP_DIST        =   2
@@ -56,3 +66,12 @@ class Constant:
 
         #NETWORKING AND THROTTLING
         self.NETWORK_FRQ    =   3           #Frequency of updates
+
+
+        #GROUND END
+        self.MTYPE_RES_REQ  =   6000
+        self.MTYPE_OVR      =   6100
+        self.MTYPE_FS       =   6200
+        self.MTYPE_RES_CNCL =   6300
+        self.MTYPE_RES_CHG  =   6400
+        self.MTYPE_RES_YAW  =   6500

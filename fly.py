@@ -1,11 +1,20 @@
 __author__ = 'asc-mbp'
 
 #Mode changes are not notified upon success
-#BUILD GROUND END
-#Build reservation
-#Build yaw
-#Build overrides
-#build multiple reservations
+
+'''
+@todo
+BUILD GROUND END                                            In progress
+WP_BEARING, yaw translation, default bearing
+Build reservation
+Build overrides
+build multiple reservations
+do flt_end
+ALT relative issues
+Support for time and latest
+Build for BIF
+Override location
+'''
 '''
     conn = CloudConn()
     conn.getmsg()
@@ -268,8 +277,6 @@ def fly():
     mavDrone.add_attribute_listener('location', onlocchange)
     while True:
         j=0
-
-
 
 
 fly()

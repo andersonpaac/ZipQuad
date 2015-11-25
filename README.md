@@ -58,11 +58,10 @@ mav_time    location    status      resid
 
 ##Ground End
 
-MISSION TYPE    MISSION ID  WP_DATA    DURATION
-    RES             12       WP         3
-    OVERRIDE        -1       WP
+
+
+MISSION TYPE    MISSION_TIME    MISSION ID  WP_LAT  WP_LON  WP_ALT    DURATION      WP_BEARING     
+    RES_REQ                           12       WP                         3           
+    OVERRIDE                          -1       WP
     RES_CNCL
-    RES_CHG      
-
-
-
+    RES_CHG                                             
