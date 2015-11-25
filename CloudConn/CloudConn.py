@@ -137,9 +137,12 @@ class CloudConn:
         self.cons = constize.Constant()
         self.flt_id = self.cons.UNINIT
 
+    def locationglobaltostringpg(self, locationglobal):
+        return str(locationglobal)[15:]
+
     #Should send location, status(mission, failsafe, available, RTH), battery, velocity, RESSTART
     def updateCloud(self, mavDrone, zipquad):
-        location = str(mavDrone.location.global_frame)[15:60]
+        location = self.locationglobaltostringpg(mavDrone.location.global_frame)
         timenow = datetime.datetime.now()
         tname = "flt_"+ str(self.flt_id)
         try:
@@ -169,7 +172,7 @@ class CloudConn:
         self.conn.commit()
         #Create a table for this flight
         try:
-            SQL = "CREATE TABLE flt_" + str(id) +" (mav_time timestamp, location varchar(50), status integer)"
+            SQL = "CREATE TABLE flt_" + str(id) +" (mav_time timestamp, location varchar(200), status integer)"
             self.cur.execute(SQL)
             self.conn.commit()
             print "CloudConn::addflight Success Created Table for flight"

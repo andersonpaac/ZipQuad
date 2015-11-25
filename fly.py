@@ -1,6 +1,11 @@
 __author__ = 'asc-mbp'
 
-
+#Mode changes are not notified upon success
+#BUILD GROUND END
+#Build reservation
+#Build yaw
+#Build overrides
+#build multiple reservations
 '''
     conn = CloudConn()
     conn.getmsg()
@@ -108,6 +113,7 @@ from pymavlink import mavutil
 import time
 from CloudConn import  CloudConn
 from Quad import quad
+import math
 
 #INITIALIZATIONS
 print ":/:MAKING CONNECTION"
@@ -117,11 +123,11 @@ consts = Constant()
 ############################################################################
 #@INPUTS HERE
 mavid = consts.MAV_ID_SIM
-mavDrone = mav.connect('192.168.1.5:14555', wait_ready=True)
+mavDrone = mav.connect('192.168.1.5:14559', wait_ready=True)
 ############################################################################
 cloudconn = CloudConn.CloudConn(mavid)
 zipquad = quad.ZipQuad()
-
+lastupdated = datetime.datetime.now()
 
 def check(PREARM_MSG):
     return True
@@ -148,7 +154,10 @@ def prearmChecks():
     return stat
 
 def modearmtakeoff():
+    global lastupdated
     global mavDrone
+    global zipquad
+
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " VEHICLE MODE CHANGE TO GUIDED"
     mavDrone.mode = mav.VehicleMode("GUIDED")
 
@@ -167,7 +176,7 @@ def modearmtakeoff():
     print mavDrone.mode.name
     reached = False
     zipquad.status = consts.TAKING_OFF
-    zipquad.dest = consts.TAKING_OFF
+    zipquad.dest = mavDrone.home_location
 
     cloudconn.addflight()
     cloudconn.updateCloud(mavDrone, zipquad)
@@ -179,12 +188,61 @@ def modearmtakeoff():
             time.sleep(1)
 
     cloudconn.updateCloud(mavDrone, zipquad)
-    print "modearmtakeoff: "+str(datetime.datetime.now()) + " setting quad to LOITER"
+    print "modearmtakeoff: "+str(datetime.datetime.now()) + " setting quad to go across river"
 
-
+    target = mav.LocationGlobal(41.281867, -73.075912, 10, is_relative=True)
+    zipquad.dest = target
+    zipquad.resid = mavid
+    zipquad.status = consts.ZIP_EN_ROUTE
+    mavDrone.commands.goto(target)
+    lastupdated = datetime.datetime.now()
     return consts.SUCCESS, consts.SUCCESS
 
 
+def failsafe():
+    return False
+
+
+def cloudoverride():
+    return False
+
+def onlocchange(self,  attr_name, msg):
+    global mavDrone, zipquad, lastupdated
+
+    if datetime.datetime.now() >= (datetime.timedelta(seconds=consts.NETWORK_FRQ) + lastupdated):
+        if zipquad.status != consts.ZIP_AT_RES: #Don't update if it's already at RESERVATION
+            lastupdated = datetime.datetime.now()
+            cloudconn.updateCloud(mavDrone, zipquad)
+
+    #Either waiting instruction, en route, atwp, override
+    if failsafe() == True and zipquad.status != consts.ZIP_OVERRIDE:
+        if zipquad.status != consts.ZIP_FS:
+            zipquad.status = consts.ZIP_FS
+            zipquad.resid  = mavid
+            mavDrone.mode = mav.VehicleMode("RTL")
+            return
+
+    elif cloudoverride() == True and zipquad.status != consts.ZIP_OVERRIDE:
+        if zipquad.status != consts.ZIP_OVERRIDE:
+            zipquad.status = consts.ZIP_OVERRIDE
+            zipquad.resid  = mavid
+            mavDrone.mode = mav.VehicleMode("RTL")
+            return
+
+    if zipquad.status==consts.ZIP_EN_ROUTE:
+        if get_distance_metres(zipquad.dest, mavDrone.location.global_frame) <= 2:
+            print "REACHED DEST"
+            zipquad.status = consts.ZIP_AT_RES
+            mavDrone.mode = mav.VehicleMode("LOITER")
+            mavDrone.mode = mav.VehicleMode("GUIDED")
+            cloudconn.updateCloud(mavDrone,zipquad)
+
+
+
+def get_distance_metres(aLocation1, aLocation2):
+    dlat = aLocation2.lat - aLocation1.lat
+    dlong = aLocation2.lon - aLocation1.lon
+    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 '''
 This is the main function
@@ -207,6 +265,10 @@ def fly():
     print "fly: " + str(datetime.datetime.now()) + " ARMING MOTORS"
     modearmtakeoff()
     #reservation_destination = LocationGlobal(40.096309, -88.217972, 10, is_relative=True)
+    mavDrone.add_attribute_listener('location', onlocchange)
+    while True:
+        j=0
+
 
 
 
