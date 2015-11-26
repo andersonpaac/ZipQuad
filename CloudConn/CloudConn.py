@@ -477,3 +477,50 @@ class CloudConn:
         except (pg.ProgrammingError and pg.IntegrityError) as e:
                 print "CloudConn::CreateRes ERROR: unable to cancel reservation"
                 return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+    def takeoffdel(self):
+        SQL = "DELETE FROM reservation"
+        try:
+            self.cur.execute(SQL)
+            self.conn.commit()
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::CreateRes ERROR: unable to cancel reservation"
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        return self.cons.SUCCESS, self.cons.SUCCESS
+
+    def gettakeofflocation(self):
+        SQL = "SELECT flt_id FROM flights ORDER BY flt_start DESC LIMIT 1"
+        try:
+            self.cur.execute(SQL)
+            self.conn.commit()
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::CreateRes ERROR: unable to cancel reservation"
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        data = self.cur.fetchall()
+
+        if len(data)>0:
+            value = data[0]
+            tname = "flt_"+str(value[0])
+            SQL = "SELECT location FROM "+ tname+" ORDER BY mav_time ASC LIMIT 1"
+            try:
+                self.cur.execute(SQL)
+                self.conn.commit()
+            except (pg.ProgrammingError and pg.IntegrityError) as e:
+                    print "CloudConn::CreateRes ERROR: unable to cancel reservation"
+                    return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+            data = self.cur.fetchall()
+            if len(data)>0:
+                values = data[0]
+                print values
+                splits = values[0].split("=")
+                lat = float(splits[1].split(",")[0])
+                lon = float(splits[2].split(",")[0])
+                alt = 0
+                lglobal = mav.LocationGlobal(lat,lon,alt,is_relative=False)
+                return self.cons.SUCCESS, lglobal
+            else:
+                return self.cons.NO_HOME, self.cons.NO_HOME
+        else:
+            return self.cons.NO_HOME, self.cons.NO_HOME

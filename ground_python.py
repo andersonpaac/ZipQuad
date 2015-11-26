@@ -1,8 +1,12 @@
 from Constants import constize
 from GSBackend import backend
+from CloudConn import CloudConn
 
+import dronekit as dk
+import math
 gs = backend.RQClass()
 consts = constize.Constant()
+cloudconn = CloudConn.CloudConn(consts.GRD_PY)
 
 def welcome():
     print "Welcome to the ECE445 Ground Station for ZipQuad"
@@ -16,13 +20,7 @@ def getdata():
     except ValueError:
         print "Your altitude input is invalid defaulting to "+str(consts.RES_DEF_ALT)
         wp_alt = consts.RES_DEF_ALT
-    wp_bearing = raw_input("What is your bearing\n")
-    try:
-        wp_bearing = int(wp_bearing)
-    except ValueError:
-        print "Your bearing input is invalid, defaulting to "+str(consts.RES_DEF_BEAR)
-        wp_bearing = consts.RES_DEF_BEAR
-    wp_dur = raw_input("How long would you like your flight?")
+    wp_dur = raw_input("How long would you like your flight?\n")
     try:
         wp_dur = int(wp_dur)
         if wp_dur < 10 or wp_dur > 120:
@@ -32,15 +30,28 @@ def getdata():
         print "Your duration input is invalid, defaulting to "+str(consts.RES_DEF_TIME)
         wp_dur = consts.RES_DEF_TIME
 
-    return consts.SUCCESS, [wp_lat, wp_lon, wp_alt, wp_dur, wp_bearing]
+    stat, val =cloudconn.gettakeofflocation()
+    if stat == consts.SUCCESS:
+        target = dk.LocationGlobal(float(wp_lat), float(wp_lon), 0, is_relative=False)
+        dist = get_distance_metres(target, val)
+        if dist < consts.MAX_DIST:
+            return consts.SUCCESS, [wp_lat, wp_lon, wp_alt, wp_dur, 0]
+        else:
+            return consts.TOOFAR, consts.TOOFAR
+
+    return consts.NO_HOME, consts.NO_HOME
+
+def get_distance_metres(aLocation1, aLocation2):
+    dlat = aLocation2.lat - aLocation1.lat
+    dlong = aLocation2.lon - aLocation1.lon
+    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 def options():
     if gs.isRes():
         print "You've a reservation with id "+str(gs.res_id)
         print "0. Cancel your reservation"
         print "1. Change your reservation"
-        print "2. Change your bearing"
-        print "3. Change your altitude"
+        print "2. Change your altitude"
         print "999. Exit"
         opt = raw_input("Enter your option:\n")
         try:
@@ -61,20 +72,15 @@ def options():
                 if stat1 == consts.SUCCESS:
                     print "Your reservation has been changed"
 
+            elif stat == consts.NO_HOME:
+                print "The craft has not been dispatched yet, please wait for the quad to dispatch"
+                return
+            elif stat == consts.TOOFAR:
+                print "Sorry, the waypoint is not in the service radius"
+                return
+
+
         elif option == 2:
-            wp_bearing = raw_input("What is your new bearing\n")
-            try:
-                wp_bearing = int(wp_bearing)
-                stat, val = gs.changeBearing(wp_bearing)
-                if stat == consts.SUCCESS:
-                    print "Your bearing request has been made"
-                else:
-                    print "Your bearing request failed to be made"
-            except ValueError:
-                print "Your bearing input is invalid, cancelling to "+str(consts.RES_DEF_BEAR)
-
-
-        elif option == 3:
             wp_alt = raw_input("What is your new altitude\n")
             try:
                 wp_alt = int(wp_alt)
@@ -111,6 +117,15 @@ def options():
                     print "Your reservation has been created"
                 else:
                     print "DB is not reachable at this time"
+
+            elif stat == consts.NO_HOME:
+                print "The craft has not been dispatched yet, please wait for the quad to dispatch"
+                return
+
+            elif stat == consts.TOOFAR:
+                print "Sorry, the waypoint is not in the service radius"
+                return
+
         elif inpt == "445":
             override = raw_input("Enter access code for OVERRIDE\n")
             stat,val = gs.override(override)
@@ -135,4 +150,3 @@ def main():
             ext = False
 
 main()
-#41.283432, -73.077111

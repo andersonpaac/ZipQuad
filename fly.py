@@ -9,11 +9,7 @@ __author__ = 'asc-mbp'
 @todo
 BUILD GROUND END                                            Part 2 complete, Part 3 remaining
 Failsafe (waiting too long for an instruction)
-Circle radius
-Support for time and latest
-Override location
-do flt_end
-takeoffdel
+
 
 @observe
 ALT relative issues
@@ -26,101 +22,7 @@ Test reservation
 Test overrides
 Test BIF
 Test multiple reservations
-'''
-'''
-    conn = CloudConn()
-    conn.getmsg()
-    conn.updatecld()
-
-
-    1- Takeoff
-    2- Loiter
-    3- quad.status = available
-       updatecloud(Force)
-       quad.endres = None
-       quad.mis_id = -1
-       quad.res_dur = -1
-
-    4- Set callback for loc location
-            disable callback
-            checks()
-            updatecloud()
-            msg = checkcloud()
-            command(msg)
-            enable callback
-
-    Initially quad is available
-    Quad gets new reservation
-    checks()
-        #Check if mission should be aborted based on duration
-        #Check if failsafes are to be triggered
-        if quad.endres != None:
-            if quad.endres - curtime < 2:   Less than 2 seconds
-                quad.status = available
-                quad.endres = None
-                quad.completed.append(quad.mis_id)
-                quad.mis_id = -1
-                quad.res_dur  =
-                updatecloud(force->RESEND)
-
-        if (!isvalid(msg.wp)):
-            quad.status = failsafe
-            quad.endres = None
-            if quad.mis_id != -1:
-                quad.completed.append(quad.mis_id)
-            gotowp(quad.home)
-            updatecloud(force)
-
-        #Endres has not been set, set endres as soon as you arrive
-        if quad.status == mission and quad.endres == None:
-            if dis(quad.curloc, quad.dest) < 5: #Within 5 meters
-                updatecloud("RESSTART")
-                quad.endres = currtime + quad.res_dur
-
-
-
-
-    command(msg)
-        if (msg.mis_id != quad.mis_id and quad.status == available and msg.mission_type == "RES") or (msg.mission_type == "RES_CHG: and quad.status== mission and quad.mis_id == res.mis_id)
-            deletecloudmessage()
-            quad.status =  mission
-            updcloud(force)  #Mission data
-            if isvalid(msg.wp):
-                quad.dest = msg.wp
-                gotowp(msg.wp)
-                if msg.mis_id != quad.mis_id:
-                    msg.mis_id = quad.mis_id
-                    quad.res_dur = validdur(msg.res_dur)
-
-
-        elif msg.mission_type == "RES_CHG: and msg.mis_id in quad.completed :Changes to an completed/ canceled reservation is illegal
-            deletecloudmessage()
-
-
-
-        elif msg.mis_id == quad.mis_id and quad.status == mission and msg.mission_type == "RES":
-            pushtotail(msg)
-
-        elif msg.res_id == quad.res_id  and quad.status == mission and msg.mission_type == "RES_CHG" :
-            if quad.dest == msg.wp:     #quad's destination is where we're going
-
-
-
-MISSION TYPE    MISSION ID  WP_DATA    DURATION
-    RES             12       WP         3
-    OVERRIDE        -1       WP
-    RES_CNCL
-    RES_CHG                             0
-
-QUAD:
-    Override
-    Failsafe
-    RES
-    available
-
-
-
-
+Circle radius
 '''
 
 
@@ -174,7 +76,7 @@ def modearmtakeoff():
     global lastupdated
     global mavDrone
     global zipquad
-
+    cloudconn.takeoffdel()
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " VEHICLE MODE CHANGE TO GUIDED"
     mavDrone.mode = mav.VehicleMode("GUIDED")
 
@@ -209,17 +111,6 @@ def modearmtakeoff():
     zipquad.status = consts.ZIP_WAIT_INST
 
     cloudconn.updateCloud(mavDrone, zipquad)
-    '''
-    print "modearmtakeoff: "+str(datetime.datetime.now()) + " setting quad to go across river"
-
-    target = mav.LocationGlobal(41.281867, -73.075912, 10, is_relative=True)
-    zipquad.dest = target
-    zipquad.resid = mavid
-    zipquad.status = consts.ZIP_EN_ROUTE
-    mavDrone.commands.goto(target)
-    lastupdated = datetime.datetime.now()
-    return consts.SUCCESS, consts.SUCCESS
-    '''
 
 def failsafe():
     if zipquad.takeofftime + datetime.timedelta(seconds = consts.BTRY_TIME) <= datetime.datetime.now():

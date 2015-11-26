@@ -61,6 +61,7 @@ class Constant:
         self.WP_DIST        =   2
         self.CRUISE_ALT     =   10          #@PRODUCTION
         self.BTRY_TIME      =   600         #@production
+        self.MAX_DIST       =   300         #@production    in meters
 
         #REALTIME CONTROL
         self.TIME_LOC_CALLB =   5
@@ -81,7 +82,8 @@ class Constant:
         self.MTYPE_RES_ACK  =   6500        #Cloud has acknowledged the request of this reservation and is en route
         self.MTYPE_OVR      =   6600
         self.MTYPE_FS       =   6700
-
+        self.NO_HOME        =   4200
+        self.TOOFAR         =   4500
 
         #RESERVATIONS_INDICES
         self.IND_MIS_TYPE   =   0
