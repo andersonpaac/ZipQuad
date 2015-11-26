@@ -88,7 +88,7 @@ def modearmtakeoff():
     global lastupdated
     global mavDrone
     global zipquad
-    cloudconn.takeoffdel()
+    #cloudconn.takeoffdel()
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " VEHICLE MODE CHANGE TO GUIDED"
     mavDrone.mode = mav.VehicleMode("GUIDED")
 

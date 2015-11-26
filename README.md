@@ -64,4 +64,15 @@ MISSION TYPE    MISSION_TIME    MISSION ID  WP_LAT  WP_LON  WP_ALT    DURATION  
     RES_REQ                           12       WP                         3           
     OVERRIDE                          -1       WP
     RES_CNCL
-    RES_CHG                                             
+    RES_CHG                                    
+             
+  
+  
+#Manual
+
+## At first start
+
+1.  rm futuresync.quad
+2.  DELETE FROM reservations
+3.  <OPTIONAL>  DROP flt_
+4.  <OPTIONAL>  DELETE FROM flights

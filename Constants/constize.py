@@ -34,6 +34,7 @@ class Constant:
         self.MAV_ID_SIM     =   1000
         self.MAV_ID_ACTUAL  =   445
         self.GRD_PY         =   455
+        self.GRD_DAEMON     =   599
         #AIRSIDE TIME
 
 
@@ -78,12 +79,14 @@ class Constant:
         self.MTYPE_RES_CNCL =   6100
         self.MTYPE_RES_CHG  =   6200
         self.MTYPE_RES_YAW  =   6300
-        self.MTYPE_RES_DND  =   6400        #Cloud denied the request to service as it was either canceled or due to out of bounds
-        self.MTYPE_RES_ACK  =   6500        #Cloud has acknowledged the request of this reservation and is en route
+        self.MTYPE_RES_DND  =   6400                    #Cloud denied the request to service as it was either canceled or due to out of bounds
+        self.MTYPE_RES_ACK  =   6500                    #Cloud has acknowledged the request of this reservation and is en route
         self.MTYPE_OVR      =   6600
         self.MTYPE_FS       =   6700
         self.NO_HOME        =   4200
         self.TOOFAR         =   4500
+        self.LOG_FILE       =   "futuresync.quad"
+        self.SYNC_INTERVAL  =   10                      #This is the refresh rate for the daemon
 
         #RESERVATIONS_INDICES
         self.IND_MIS_TYPE   =   0

@@ -1,7 +1,7 @@
 from Constants import constize
 from GSBackend import backend
 from CloudConn import CloudConn
-
+import datetime
 import dronekit as dk
 import math
 gs = backend.RQClass()
@@ -111,22 +111,49 @@ def options():
         print "You don't have any reservations yet"
         inpt = raw_input("Would you like to create a reservation(y/n)?\n")
         if inpt=="y":
+            inpt1 = raw_input("Is this for now or later?")
+            if inpt1 == "now" or inpt1 == "n":
+                stat, val = getdata()
+                if stat == consts.SUCCESS:
+                    stat1, val1 = gs.createreservation(val[0], val[1], val[2], val[3], val[4])
+                    if stat1 == consts.SUCCESS:
+                        print "Your reservation has been created"
+                    else:
+                        print "DB is not reachable at this time"
 
-            stat, val = getdata()
-            if stat == consts.SUCCESS:
-                stat1, val1 = gs.createreservation(val[0], val[1], val[2], val[3], val[4])
-                if stat1 == consts.SUCCESS:
-                    print "Your reservation has been created"
-                else:
-                    print "DB is not reachable at this time"
+                elif stat == consts.NO_HOME:
+                    print "The craft has not been dispatched yet, please wait for the quad to dispatch"
+                    return
 
-            elif stat == consts.NO_HOME:
-                print "The craft has not been dispatched yet, please wait for the quad to dispatch"
-                return
+                elif stat == consts.TOOFAR:
+                    print "Sorry, the waypoint is not in the service radius"
+                    return
+            else:
+                inpt2 = raw_input("Enter the day and time for the reservation? (12-21-15 4:21 PM)")
+                try:
+                    dat = datetime.datetime.strptime(inpt2, "%m-%d-%y %I:%M %p")
+                except ValueError:
+                    print "You've not entered it in the right format/ that was not a valid date"
+                    return
+                stat , val = getdata()
+                if stat == consts.SUCCESS or stat == consts.NO_HOME or consts.TOOFAR:   #@production
+                    dict1 = {}
+                    dict1["lat"]        =   val[0]
+                    dict1["lon"]        =   val[1]
+                    dict1["alt"]        =   val[2]
+                    dict1["dur"]        =   val[3]
+                    dict1["bearing"]    =   val[4]
+                    dict1["synctime"]   =   inpt2
+                    if stat == consts.NO_HOME or consts.TOOFAR:
+                        print "There is no craft that is currently airborne\nYour location might be outside our service(Service not guaranteed)"
+                    fd = open(consts.LOG_FILE, "a")
+                    fd.write(str(dict1)+"\n")
+                    fd.close()
+                    exit(0)
 
-            elif stat == consts.TOOFAR:
-                print "Sorry, the waypoint is not in the service radius"
-                return
+
+
+
 
         elif inpt == "445":
             override = raw_input("Enter access code for OVERRIDE\n")
