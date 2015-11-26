@@ -12,8 +12,9 @@ def welcome():
     print "Welcome to the ECE445 Ground Station for ZipQuad"
 
 def getdata():
-    wp_lat = raw_input("Input latitude of reservation:\n")
-    wp_lon = raw_input("Input longitude of reservation:\n")
+    wp_lat_lon = raw_input("Input latitude and longitude of reservation(, delimited):\n")
+    wp_lat = wp_lat_lon.split(",")[0].lstrip().rstrip()
+    wp_lon = wp_lat_lon.split(",")[1].lstrip().rstrip()
     wp_alt = raw_input("What is the prefered altitude\n")
     try:
         wp_alt = int(wp_alt)
@@ -110,6 +111,7 @@ def options():
         print "You don't have any reservations yet"
         inpt = raw_input("Would you like to create a reservation(y/n)?\n")
         if inpt=="y":
+
             stat, val = getdata()
             if stat == consts.SUCCESS:
                 stat1, val1 = gs.createreservation(val[0], val[1], val[2], val[3], val[4])

@@ -61,7 +61,7 @@ class Constant:
         self.WP_DIST        =   2
         self.CRUISE_ALT     =   10          #@PRODUCTION
         self.BTRY_TIME      =   600         #@production
-        self.MAX_DIST       =   300         #@production    in meters
+        self.MAX_DIST       =   1300        #@production    in meters
 
         #REALTIME CONTROL
         self.TIME_LOC_CALLB =   5

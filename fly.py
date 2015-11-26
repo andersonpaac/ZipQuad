@@ -1,5 +1,8 @@
 __author__ = 'asc-mbp'
 
+#@production
+#   Fences
+#   Gimbal on the ground
 
 '''
 #Critical:
@@ -19,7 +22,6 @@ commands.clr() stuff
 @tests:
 Network intolerance
 Test reservation
-Test overrides
 Test BIF
 Test multiple reservations
 Circle radius
@@ -46,7 +48,7 @@ consts = Constant()
 ############################################################################
 #@INPUTS HERE
 mavid = consts.MAV_ID_SIM
-mavDrone = mav.connect('192.168.1.5:14559', wait_ready=True)
+mavDrone = mav.connect('192.168.1.5:14558', wait_ready=True)
 ############################################################################
 cloudconn = CloudConn.CloudConn(mavid)
 zipquad = quad.ZipQuad()
@@ -71,6 +73,16 @@ def prearmChecks():
         print "arm-checks: "+str(datetime.datetime.now()) + str(each) + " check returned "+ str(stat)
     print "arm-checks: "+str(datetime.datetime.now()) + " is returning "+str(stat)
     return stat
+#Features       :Uber like notfications
+#Requirement    :ROI circle DONE
+#Buildtestcases
+#1  Make reservation, make another reservation
+#2  failsafe - fence
+#3  failsafe - overtime
+#4  reservation 1, reservation 2, cancel res1 when en route to res 1
+#5  reservation 1, reservation 2, cancel res1 when at res1 performing circle
+#6  reservation 1, reservation 2  -> create override when at res1
+#7  reservation 1, reservation 2 -> create override when en route to res1
 
 def modearmtakeoff():
     global lastupdated
@@ -129,9 +141,9 @@ def onlocchange(self,  attr_name, msg):
         lastupdated = datetime.datetime.now()
         cloudconn.updateCloud(mavDrone, zipquad)
         if zipquad.status != consts.ZIP_OVERRIDE or zipquad.status != consts.ZIP_FS:
-            #print zipquad.status
+            print zipquad.status
             stat, val = cloudconn.getmissions(zipquad)
-            #print stat, val
+            print stat, val
             if stat == consts.ZIP_OVERRIDE:
                 mavDrone.mode = mav.VehicleMode("RTL")
                 zipquad.status = consts.ZIP_OVERRIDE
@@ -139,6 +151,7 @@ def onlocchange(self,  attr_name, msg):
                 zipquad.dest  = mavDrone.home_location
 
             elif stat == consts.FLT_CANCELED:
+                mavDrone.mode = mav.VehicleMode("LOITER")
                 mavDrone.mode = mav.VehicleMode("GUIDED")
                 zipquad.status = consts.ZIP_WAIT_INST
                 zipquad.mode   = mavid

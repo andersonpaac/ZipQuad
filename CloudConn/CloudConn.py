@@ -479,7 +479,7 @@ class CloudConn:
                 return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
     def takeoffdel(self):
-        SQL = "DELETE FROM reservation"
+        SQL = "DELETE FROM reservations"
         try:
             self.cur.execute(SQL)
             self.conn.commit()
