@@ -18,13 +18,19 @@ def getdata():
     wp_alt = raw_input("What is the prefered altitude\n")
     try:
         wp_alt = int(wp_alt)
+        if wp_alt > 90:
+            print "Your altitude request is higher than allowed as mandated by the FAA, defauting to "+str(consts.RES_DEF_TIME)
+            wp_alt = consts.RES_DEF_ALT
+        elif wp_alt < consts.MIN_ALT:
+            print "Your altitude target is too low for that area. Defaulting to " + str(consts.RES_DEF_ALT)
+            wp_alt = consts.RES_DEF_ALT
     except ValueError:
         print "Your altitude input is invalid defaulting to "+str(consts.RES_DEF_ALT)
         wp_alt = consts.RES_DEF_ALT
     wp_dur = raw_input("How long would you like your flight?\n")
     try:
         wp_dur = int(wp_dur)
-        if wp_dur < 10 or wp_dur > 120:
+        if wp_dur < consts.RES_MIN_DUR or wp_dur > consts.RES_MAX_DUR:
             print "Your duration input is too high or too low, defaulting to "+str(consts.RES_DEF_TIME)
         wp_dur = consts.RES_DEF_TIME
     except ValueError:
@@ -38,9 +44,9 @@ def getdata():
         if dist < consts.MAX_DIST:
             return consts.SUCCESS, [wp_lat, wp_lon, wp_alt, wp_dur, 0]
         else:
-            return consts.TOOFAR, consts.TOOFAR
+            return consts.TOOFAR, [wp_lat, wp_lon, wp_alt, wp_dur, 0]
 
-    return consts.NO_HOME, consts.NO_HOME
+    return consts.NO_HOME, [wp_lat, wp_lon, wp_alt, wp_dur, 0]
 
 def get_distance_metres(aLocation1, aLocation2):
     dlat = aLocation2.lat - aLocation1.lat
@@ -129,13 +135,17 @@ def options():
                     print "Sorry, the waypoint is not in the service radius"
                     return
             else:
-                inpt2 = raw_input("Enter the day and time for the reservation? (12-21-15 4:21 PM)")
+                inpt2 = raw_input("Enter the day and time for the reservation? (12-21-15 04:21 PM)\n")
                 try:
                     dat = datetime.datetime.strptime(inpt2, "%m-%d-%y %I:%M %p")
+                    if dat < datetime.datetime.now():
+                        print "This time is in the past."
+                        return
                 except ValueError:
                     print "You've not entered it in the right format/ that was not a valid date"
                     return
                 stat , val = getdata()
+                print "Val returned is "+ str(val)
                 if stat == consts.SUCCESS or stat == consts.NO_HOME or consts.TOOFAR:   #@production
                     dict1 = {}
                     dict1["lat"]        =   val[0]

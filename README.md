@@ -71,7 +71,7 @@ MISSION TYPE    MISSION_TIME    MISSION ID  WP_LAT  WP_LON  WP_ALT    DURATION  
 #Manual
 
 ## At first start
-
+0. KEEP THR STICK AT MID
 1.  rm futuresync.quad
 2.  DELETE FROM reservations
 3.  <OPTIONAL>  DROP flt_

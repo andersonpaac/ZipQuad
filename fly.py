@@ -1,8 +1,19 @@
 __author__ = 'asc-mbp'
 
+#@todo
+#Finish prearm for GPS
+#Altitude control
+
+#@Features
+#Terrain following
+
+
 #@production
 #   Fences
 #   Gimbal on the ground
+#   BIF MIN, MAX ALT
+#   Auto Land and RTL performance
+#   broken Network psql tests
 
 '''
 #Critical:
@@ -16,15 +27,11 @@ Failsafe (waiting too long for an instruction)
 
 @observe
 ALT relative issues
-commands.clr() stuff
 
 
 @tests:
 Network intolerance
-Test reservation
 Test BIF
-Test multiple reservations
-Circle radius
 '''
 
 
@@ -76,13 +83,16 @@ def prearmChecks():
 #Features       :Uber like notfications
 #Requirement    :ROI circle DONE
 #Buildtestcases
-#1  Make reservation, make another reservation
-#2  failsafe - fence
-#3  failsafe - overtime
+#1  Make reservation, make another reservation                                          CHECK
+#2  failsafe - fence    internal(ON PX4)
+#2.1Disavow - fence external(through GS)
+#3  failsafe - overtime                                                                 CHECK
 #4  reservation 1, reservation 2, cancel res1 when en route to res 1
 #5  reservation 1, reservation 2, cancel res1 when at res1 performing circle
 #6  reservation 1, reservation 2  -> create override when at res1
 #7  reservation 1, reservation 2 -> create override when en route to res1
+#8  Reservation 1 - ensure duration is correct                                          CHECK
+#9  POINTING direction on circle                                                        CHECK
 
 def modearmtakeoff():
     global lastupdated
@@ -100,7 +110,7 @@ def modearmtakeoff():
         time.sleep(0.3)
 
     print "modearmtakeoff: "+str(datetime.datetime.now()) + " ARMED"
-    print "modearmtakeoff: "+str(datetime.datetime.now()) + " attempting TAKEOFF to"+str(consts.TAKEOFF_ALT)
+    print "modearmtakeoff: "+str(datetime.datetime.now()) + " attempting TAKEOFF to "+str(consts.TAKEOFF_ALT)+" meters"
 
 
     mavDrone.commands.takeoff(consts.TAKEOFF_ALT)   #quad.takeoffalt
@@ -125,9 +135,12 @@ def modearmtakeoff():
     cloudconn.updateCloud(mavDrone, zipquad)
 
 def failsafe():
-    if zipquad.takeofftime + datetime.timedelta(seconds = consts.BTRY_TIME) <= datetime.datetime.now():
-        print "Nope"
+
+    expiration = zipquad.takeofftime + datetime.timedelta(seconds=consts.BTRY_TIME)
+    #print str(expiration - datetime.datetime.now())
+    if expiration <= datetime.datetime.now():
         return True
+
     return False
 
 
@@ -141,16 +154,23 @@ def onlocchange(self,  attr_name, msg):
         lastupdated = datetime.datetime.now()
         cloudconn.updateCloud(mavDrone, zipquad)
         if zipquad.status != consts.ZIP_OVERRIDE or zipquad.status != consts.ZIP_FS:
-            print zipquad.status
+            #print zipquad.status
             stat, val = cloudconn.getmissions(zipquad)
-            print stat, val
+            #print stat, val
             if stat == consts.ZIP_OVERRIDE:
+                #@PRODUCTION CRITICAL DO NOT OVERRIDE THE TX
+                if mavid == consts.MAV_ID_SIM:
+                    mavDrone.channels.overrides = {}
+                print "onlocchange:: Received an override "+str(zipquad.status)
                 mavDrone.mode = mav.VehicleMode("RTL")
                 zipquad.status = consts.ZIP_OVERRIDE
                 zipquad.resid = consts.ZIP_OVERRIDE
                 zipquad.dest  = mavDrone.home_location
 
             elif stat == consts.FLT_CANCELED:
+                #@PRODUCTION CRITICAL DO NOT OVERRIDE THE TX
+                if mavid == consts.MAV_ID_SIM:
+                    mavDrone.channels.overrides = {}
                 mavDrone.mode = mav.VehicleMode("LOITER")
                 mavDrone.mode = mav.VehicleMode("GUIDED")
                 zipquad.status = consts.ZIP_WAIT_INST
@@ -158,6 +178,10 @@ def onlocchange(self,  attr_name, msg):
 
 
             elif stat == consts.SUCCESS:
+                #@PRODUCTION CRITICAL DO NOT OVERRIDE THE TX
+                if mavid == consts.MAV_ID_SIM:
+                    mavDrone.channels.overrides = {}
+
                 mavDrone.mode = mav.VehicleMode("GUIDED")
                 print str(val["LocationGlobal"])
                 mavDrone.commands.goto(val["LocationGlobal"])
@@ -168,8 +192,11 @@ def onlocchange(self,  attr_name, msg):
                 zipquad.status = consts.ZIP_EN_ROUTE
 
     #Either waiting instruction, en route, atwp, override
-    if failsafe() == True and zipquad.status != consts.ZIP_OVERRIDE:
+    if zipquad.status != consts.ZIP_OVERRIDE and failsafe() == True:
         if zipquad.status != consts.ZIP_FS:
+            #@PRODUCTION CRITICAL DO NOT OVERRIDE THE TX
+            if mavid == consts.MAV_ID_SIM:
+                mavDrone.channels.overrides = {}
             print "ENTERED FAILSAFE!"
             zipquad.status = consts.ZIP_FS
             zipquad.resid  = mavid
@@ -180,6 +207,9 @@ def onlocchange(self,  attr_name, msg):
         if get_distance_metres(zipquad.dest, mavDrone.location.global_frame) <= 2:
             print "REACHED DEST"
             zipquad.status = consts.ZIP_AT_RES
+            #@PRODUCTION CRITICAL DO NOT OVERRIDE THE TX
+            if mavid == consts.MAV_ID_SIM:
+                mavDrone.channels.overrides[consts.THROTTLE_OVR] = 1500
             mavDrone.mode = mav.VehicleMode("CIRCLE")
             zipquad.endres = datetime.datetime.now() + datetime.timedelta(seconds=zipquad.dur)
             print str(zipquad.endres)
@@ -188,6 +218,9 @@ def onlocchange(self,  attr_name, msg):
 
     if zipquad.status == consts.ZIP_AT_RES and datetime.datetime.now() >= zipquad.endres:
         print "fly:: onloc Completed reservation time"
+        #@PRODUCTION DO NOT OVERRIDE THE TX
+        if mavid == consts.MAV_ID_SIM:
+            mavDrone.channels.overrides = {}
         zipquad.resid = mavid
         zipquad.status = consts.ZIP_WAIT_INST
         mavDrone.mode = VehicleMode("GUIDED")

@@ -278,6 +278,7 @@ class CloudConn:
         if stat == self.cons.SUCCESS:
             if val == True:
                 print "CloudConn:getmissions: Found an override"
+                self.ackall(self.cons.ZIP_OVERRIDE)
                 return self.cons.ZIP_OVERRIDE, self.cons.ZIP_OVERRIDE
 
         if zipquad.status == self.cons.ZIP_WAIT_INST:

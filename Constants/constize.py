@@ -52,17 +52,21 @@ class Constant:
         self.FAIL_CANT_CNCL =   55
 
         self.RES_DEF_TIME   =   40
-        self.RES_DEF_ALT    =   20
+        self.RES_DEF_ALT    =   32         #@production    Tailor stitch these for BIF
         self.RES_DEF_BEAR   =   100
         self.OVR_AUTH_FAIL  =   -449
+        self.RES_MAX_DUR    =   120                      #@production This is the maximum amount of time a reservation can take
+        self.RES_MIN_DUR    =   30
 
         #AIR_PARAMS
-        self.TAKEOFF_ALT    =   5           #@production In meters
+        self.TAKEOFF_ALT    =   20          #@production In meters
         self.PRECISION      =   0.95        #Overshoot control for altitude
         self.WP_DIST        =   2
-        self.CRUISE_ALT     =   10          #@PRODUCTION
-        self.BTRY_TIME      =   600         #@production
+        self.CRUISE_ALT     =   30          #@PRODUCTION
+        self.BTRY_TIME      =   6000        #@production
         self.MAX_DIST       =   1300        #@production    in meters
+        self.MAX_ALT        =   90          #@production
+        self.MIN_ALT        =   30          #@production
 
         #REALTIME CONTROL
         self.TIME_LOC_CALLB =   5
@@ -88,6 +92,7 @@ class Constant:
         self.LOG_FILE       =   "futuresync.quad"
         self.SYNC_INTERVAL  =   10                      #This is the refresh rate for the daemon
 
+
         #RESERVATIONS_INDICES
         self.IND_MIS_TYPE   =   0
         self.IND_MIS_TIME   =   1
@@ -97,3 +102,7 @@ class Constant:
         self.IND_WP_ALT     =   5
         self.IND_WP_DUR     =   6
         self.IND_WP_BEARING =   7
+
+
+        #SIM ONLY WARN
+        self.THROTTLE_OVR   =   '3'
