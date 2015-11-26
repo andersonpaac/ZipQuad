@@ -43,7 +43,7 @@ class Constant:
         self.SUCCESS        =   200
         self.DB_NOT_REACH   =   -911
         self.NO_UPDATE      =   350
-
+        self.FLT_CANCELED   =   191
 
 
         #RES_PARAMS
@@ -56,9 +56,11 @@ class Constant:
         self.OVR_AUTH_FAIL  =   -449
 
         #AIR_PARAMS
-        self.TAKEOFF_ALT    =   5           #In meters
+        self.TAKEOFF_ALT    =   5           #@production In meters
         self.PRECISION      =   0.95        #Overshoot control for altitude
         self.WP_DIST        =   2
+        self.CRUISE_ALT     =   10          #@PRODUCTION
+        self.BTRY_TIME      =   600         #@production
 
         #REALTIME CONTROL
         self.TIME_LOC_CALLB =   5

@@ -242,7 +242,7 @@ class CloudConn:
             alt = val[self.cons.IND_WP_ALT]
             dur = val[self.cons.IND_WP_DUR]
             bearing = val[self.cons.IND_WP_BEARING]
-            loctoret = mav.LocationGlobal(lat, lon, 0, is_relative=True)
+            loctoret = mav.LocationGlobal(lat, lon, self.cons.CRUISE_ALT, is_relative=True)
             #Set mission type for all instances of this id to acknowledged
             SQL  = "UPDATE reservations SET mission_type = %s where mission_id = %s"
             values = (self.cons.MTYPE_RES_ACK, id)
@@ -259,6 +259,9 @@ class CloudConn:
         return self.cons.SUCCESS, {"stat":False}
 
 
+    #loc.waiting -> Overrides, new_res, res_change
+    #loc.en_route -> Overrides, res_change_for that id matters
+    #loc.override   -> Don't call
 
 
     #Call this when you're awaiting instructions
@@ -269,7 +272,7 @@ class CloudConn:
     #                                                   make sure changes have not been made to this reservation
     #                                                   make sure same reservation isn't done twice{change mtype}
 
-    def getmissions(self):
+    def getmissions(self, zipquad):
         #Get overrides
         stat, val = self.getoverrides()
         if stat == self.cons.SUCCESS:
@@ -277,39 +280,55 @@ class CloudConn:
                 print "CloudConn:getmissions: Found an override"
                 return self.cons.ZIP_OVERRIDE, self.cons.ZIP_OVERRIDE
 
-        #No overrides get reservations
-        stat, val = self.getresreqs()
-        if stat == self.cons.SUCCESS and val["stat"] == True:
-            print "CloudConn:getmissions: Found a reservation request"
-            valsreq = val["data"]
-            res_id = val["id"]
-            lat = float(valsreq[self.cons.IND_WP_LAT])
-            lon = float(valsreq[self.cons.IND_WP_LON])
-            alt = valsreq[self.cons.IND_WP_ALT]
-            dur = valsreq[self.cons.IND_WP_DUR]
-            bearing = valsreq[self.cons.IND_WP_BEARING]
-            loctoret = mav.LocationGlobal(lat, lon, 0, is_relative=True)
-            dicttoret = {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":res_id}
+        if zipquad.status == self.cons.ZIP_WAIT_INST:
+            #No overrides get reservations
+            stat, val = self.getresreqs()
+            if stat == self.cons.SUCCESS and val["stat"] == True:
+                print "CloudConn:getmissions: Found a reservation request"
+                valsreq = val["data"]
+                res_id = val["id"]
+                lat = float(valsreq[self.cons.IND_WP_LAT])
+                lon = float(valsreq[self.cons.IND_WP_LON])
+                alt = valsreq[self.cons.IND_WP_ALT]
+                dur = valsreq[self.cons.IND_WP_DUR]
+                bearing = valsreq[self.cons.IND_WP_BEARING]
+                loctoret = mav.LocationGlobal(lat, lon, self.cons.CRUISE_ALT, is_relative=True)
+                dicttoret = {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":res_id}
 
+                #Check if canceled
+                stat, val = self.isReqCNCL(res_id)
+                if stat == self.cons.SUCCESS and val == True:
+                    print "CloudConn:getmissions: The reservation was canceled, denying request"
+                    self.denyall(res_id)
+                    return self.cons.NO_UPDATE, self.cons.NO_UPDATE
+
+                #Check if changed
+                stat, val = self.getlatestchange(res_id)
+                if stat == self.cons.SUCCESS and val["stat"]==True:
+                    print "CloudConn:getmissions: The reservation was changed"
+                    return self.cons.SUCCESS, val
+
+
+                #Not canceled, Not changed
+                self.ackall(res_id)
+                return self.cons.SUCCESS, dicttoret
+            return self.cons.NO_UPDATE, self.cons.NO_UPDATE
+
+        if zipquad.status == self.cons.ZIP_EN_ROUTE or zipquad.status == self.cons.ZIP_AT_RES:
+            res_id = zipquad.resid
             #Check if canceled
             stat, val = self.isReqCNCL(res_id)
             if stat == self.cons.SUCCESS and val == True:
                 print "CloudConn:getmissions: The reservation was canceled, denying request"
                 self.denyall(res_id)
-                return self.cons.NO_UPDATE, self.cons.NO_UPDATE
-
+                return self.cons.FLT_CANCELED, self.cons.FLT_CANCELED
             #Check if changed
-            stat, val = self.getlatestchange(res_id)
-            if stat == self.cons.SUCCESS and val["stat"]==True:
+            stat12, val = self.getlatestchange(res_id)
+            if stat12 == self.cons.SUCCESS and val["stat"]==True:
                 print "CloudConn:getmissions: The reservation was changed"
                 return self.cons.SUCCESS, val
+            return self.cons.NO_UPDATE, self.cons.NO_UPDATE
 
-
-            #Not canceled, Not changed
-            self.ackall(res_id)
-            return self.cons.SUCCESS, dicttoret
-
-        return self.cons.NO_UPDATE, self.cons.NO_UPDATE
 
 
     def locationglobaltostringpg(self, locationglobal):
