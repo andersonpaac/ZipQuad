@@ -89,7 +89,7 @@ def prearmChecks():
 #3  failsafe - overtime                                                                 CHECK
 #4  reservation 1, reservation 2, cancel res1 when en route to res 1
 #5  reservation 1, reservation 2, cancel res1 when at res1 performing circle
-#6  reservation 1, reservation 2  -> create override when at res1
+#6  reservation 1, reservation 2  -> create override when at res1                       CHECK
 #7  reservation 1, reservation 2 -> create override when en route to res1
 #8  Reservation 1 - ensure duration is correct                                          CHECK
 #9  POINTING direction on circle                                                        CHECK
