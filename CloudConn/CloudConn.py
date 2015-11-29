@@ -148,7 +148,7 @@ class CloudConn:
             self.cur.execute(SQL,values)
             self.conn.commit()
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-            print "CloudConn::getMissions ERROR: Unable to read from reservations"
+            print "CloudConn::getoverrides ERROR: Unable to read from reservations"
             print e
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
@@ -166,7 +166,7 @@ class CloudConn:
             self.cur.execute(SQL,query)
             self.conn.commit()
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-            print "CloudConn::getmissions ERROR: Unable to read from reservations"
+            print "CloudConn::getresreqs ERROR: Unable to read from reservations"
             print e
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
         data = self.cur.fetchall()
@@ -183,7 +183,7 @@ class CloudConn:
                 self.conn.commit()
 
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-                print "CloudConn::getmissions ERROR: Unable to read from reservations"
+                print "CloudConn::isReqCNCL ERROR: Unable to read from reservations"
                 print e
                 return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
@@ -202,7 +202,7 @@ class CloudConn:
             self.conn.commit()
 
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-            print "CloudConn::getmissions ERROR: Unable to read from reservations"
+            print "CloudConn::denyall ERROR: Unable to read from reservations"
             print e
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
@@ -216,7 +216,7 @@ class CloudConn:
             self.conn.commit()
 
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-            print "CloudConn::getmissions ERROR: Unable to read from reservations"
+            print "CloudConn::ackall ERROR: Unable to read from reservations"
             print e
             return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
@@ -230,7 +230,7 @@ class CloudConn:
                 self.conn.commit()
 
         except (pg.ProgrammingError and pg.IntegrityError) as e:
-                print "CloudConn::getmissions ERROR: Unable to read from reservations"
+                print "CloudConn::getlatestchange ERROR: Unable to read from reservations"
                 print e
                 return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
@@ -252,12 +252,53 @@ class CloudConn:
                 return self.cons.SUCCESS, {"stat":True, "LocationGlobal":loctoret, "alt":alt, "dur":dur, "bearing":bearing, "res_id":id}
 
             except (pg.ProgrammingError and pg.IntegrityError) as e:
-                print "CloudConn::getmissions ERROR: Unable to read from reservations"
+                print "CloudConn::getlatestchange ERROR: Unable to read from reservations"
                 print e
                 return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
 
         return self.cons.SUCCESS, {"stat":False}
 
+    def getacks(self):
+        SQL = "SELECT mission_id FROM reservations WHERE mission_type="+str(self.cons.MTYPE_RES_ACK)+" ORDER BY mission_id"
+        try:
+                self.cur.execute(SQL)
+                self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::getacks "
+                print e
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        data = self.cur.fetchall()
+        return self.cons.SUCCESS, data
+
+    def getdenied(self):
+        SQL = "SELECT mission_id FROM reservations WHERE mission_type="+str(self.cons.MTYPE_RES_DND)+" ORDER BY mission_id"
+        try:
+                self.cur.execute(SQL)
+                self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::getacks "
+                print e
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        data = self.cur.fetchall()
+        return self.cons.SUCCESS, data
+
+    def overrideotherres(self):
+        SQL  = "UPDATE reservations SET mission_type = %s where mission_type = %s"
+        values = (self.cons.MTYPE_RES_DND, self.cons.MTYPE_RES_REQ)
+        try:
+            self.cur.execute(SQL,values)
+            self.conn.commit()
+
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+            print "CloudConn::overrideotherres ERROR: Unable to read from reservations"
+            print e
+            return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        return self.cons.SUCCESS, True
 
     #loc.waiting -> Overrides, new_res, res_change
     #loc.en_route -> Overrides, res_change_for that id matters
@@ -279,6 +320,7 @@ class CloudConn:
             if val == True:
                 print "CloudConn:getmissions: Found an override"
                 self.ackall(self.cons.ZIP_OVERRIDE)
+                self.overrideotherres()
                 return self.cons.ZIP_OVERRIDE, self.cons.ZIP_OVERRIDE
 
         if zipquad.status == self.cons.ZIP_WAIT_INST:

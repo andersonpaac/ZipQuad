@@ -2,10 +2,18 @@ __author__ = 'asc-mbp'
 
 #@todo
 #Finish prearm for GPS
-#Altitude control
+#GS msgs and checking improve
+#Altitude control   [STAGED]
+
+#@observe
+#General altitude changes
+#gs_pc not taken off problems?
+#Test too much dist
+
 
 #@Features
-#Terrain following
+#Terrain following                      30  m
+#Cancel later reservations
 
 
 #@production
@@ -55,7 +63,7 @@ consts = Constant()
 ############################################################################
 #@INPUTS HERE
 mavid = consts.MAV_ID_SIM
-mavDrone = mav.connect('192.168.1.5:14558', wait_ready=True)
+mavDrone = mav.connect('192.168.83.12:14559', wait_ready=True)
 ############################################################################
 cloudconn = CloudConn.CloudConn(mavid)
 zipquad = quad.ZipQuad()
@@ -189,6 +197,7 @@ def onlocchange(self,  attr_name, msg):
                 zipquad.resid = val["res_id"]
                 zipquad.alt = val["alt"]
                 zipquad.dur = val["dur"]
+                zipquad.bear   =    val['bearing']
                 zipquad.status = consts.ZIP_EN_ROUTE
 
     #Either waiting instruction, en route, atwp, override
@@ -201,15 +210,18 @@ def onlocchange(self,  attr_name, msg):
             zipquad.status = consts.ZIP_FS
             zipquad.resid  = mavid
             mavDrone.mode = mav.VehicleMode("RTL")
+            cloudconn.overrideotherres()                #Tell other reservations they've been canceled
             return
 
     if zipquad.status==consts.ZIP_EN_ROUTE:
-        if get_distance_metres(zipquad.dest, mavDrone.location.global_frame) <= 2:
+        if get_distance_metres(zipquad.dest, mavDrone.location.global_frame) <= consts.CIRCLE_OFS:
             print "REACHED DEST"
             zipquad.status = consts.ZIP_AT_RES
             #@PRODUCTION CRITICAL DO NOT OVERRIDE THE TX
             if mavid == consts.MAV_ID_SIM:
-                mavDrone.channels.overrides[consts.THROTTLE_OVR] = 1500
+                mavDrone.channels.overrides[consts.THROTTLE_OVR] = consts.THR_CENTER
+            if zipquad.bear == consts.REQ_PANORAMA:
+                mavDrone.parameters['CIRCLE_RADIUS'] = consts.PANORAMA_MODE
             mavDrone.mode = mav.VehicleMode("CIRCLE")
             zipquad.endres = datetime.datetime.now() + datetime.timedelta(seconds=zipquad.dur)
             print str(zipquad.endres)
@@ -219,6 +231,7 @@ def onlocchange(self,  attr_name, msg):
     if zipquad.status == consts.ZIP_AT_RES and datetime.datetime.now() >= zipquad.endres:
         print "fly:: onloc Completed reservation time"
         #@PRODUCTION DO NOT OVERRIDE THE TX
+        mavDrone.parameters['CIRCLE_RADIUS'] = consts.REMOVE_PANORAMA
         if mavid == consts.MAV_ID_SIM:
             mavDrone.channels.overrides = {}
         zipquad.resid = mavid

@@ -76,3 +76,15 @@ MISSION TYPE    MISSION_TIME    MISSION ID  WP_LAT  WP_LON  WP_ALT    DURATION  
 2.  DELETE FROM reservations
 3.  <OPTIONAL>  DROP flt_
 4.  <OPTIONAL>  DELETE FROM flights
+5.  CIRCLE RATE
+
+#User guidelines
+
+##What can I do?
+
+1.  Make a reservation now
+2.  Make a reservation for later
+2.  Cancel a reservation
+3.  Change a reservation
+4.  [ADMIN] Ask for an override
+7.  PANAROMA

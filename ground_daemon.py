@@ -5,7 +5,7 @@ from CloudConn import CloudConn
 def grounddaemon():
     served = []
     consts = constize.Constant()
-    lastupdated = datetime.datetime.now()
+    lastupdated = datetime.datetime.now() - datetime.timedelta(seconds=consts.SYNC_INTERVAL)
     cldconn = CloudConn.CloudConn(consts.GRD_DAEMON)
     while True:
         if datetime.datetime.now() >= lastupdated + datetime.timedelta(seconds=consts.SYNC_INTERVAL):

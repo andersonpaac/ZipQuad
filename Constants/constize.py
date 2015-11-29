@@ -35,6 +35,7 @@ class Constant:
         self.MAV_ID_ACTUAL  =   445
         self.GRD_PY         =   455
         self.GRD_DAEMON     =   599
+        self.GRD_UBER       =   655
         #AIRSIDE TIME
 
 
@@ -57,6 +58,7 @@ class Constant:
         self.OVR_AUTH_FAIL  =   -449
         self.RES_MAX_DUR    =   120                      #@production This is the maximum amount of time a reservation can take
         self.RES_MIN_DUR    =   30
+        self.REQ_PANORAMA   =   99.99
 
         #AIR_PARAMS
         self.TAKEOFF_ALT    =   20          #@production In meters
@@ -67,6 +69,10 @@ class Constant:
         self.MAX_DIST       =   1300        #@production    in meters
         self.MAX_ALT        =   90          #@production
         self.MIN_ALT        =   30          #@production
+        self.CIRCLE_OFS     =   40          #@production
+        self.THR_CENTER     =   1500
+        self.PANORAMA_MODE  =   0.0
+        self.REMOVE_PANORAMA=   2000.0
 
         #REALTIME CONTROL
         self.TIME_LOC_CALLB =   5
@@ -91,6 +97,7 @@ class Constant:
         self.TOOFAR         =   4500
         self.LOG_FILE       =   "futuresync.quad"
         self.SYNC_INTERVAL  =   10                      #This is the refresh rate for the daemon
+        self.SYNC_UBER_INT  =   10                      #This is the uber's sync rate
 
 
         #RESERVATIONS_INDICES
