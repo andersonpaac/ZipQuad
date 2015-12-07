@@ -567,3 +567,17 @@ class CloudConn:
                 return self.cons.NO_HOME, self.cons.NO_HOME
         else:
             return self.cons.NO_HOME, self.cons.NO_HOME
+
+
+    def getallfromflt(self, id):
+        tname = "flt_"+str(id)
+        SQL = "SELECT location FROM "+tname+" ORDER BY mav_time ASC"
+        try:
+                self.cur.execute(SQL)
+                self.conn.commit()
+        except (pg.ProgrammingError and pg.IntegrityError) as e:
+                print "CloudConn::getallfromflt ERROR: unable to cancel reservation"
+                return self.cons.DB_NOT_REACH, self.cons.DB_NOT_REACH
+
+        data = self.cur.fetchall()
+        return self.cons.SUCCESS, data

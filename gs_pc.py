@@ -30,12 +30,13 @@ def getdata():
     except ValueError:
         print "Your duration input is invalid, defaulting to "+str(consts.RES_DEF_TIME)
         wp_dur = consts.RES_DEF_TIME
-
+	
     stat, val =cloudconn.gettakeofflocation()
+    stat = consts.SUCCESS
     if stat == consts.SUCCESS:
         target = dk.LocationGlobal(float(wp_lat), float(wp_lon), 0, is_relative=False)
         dist = get_distance_metres(target, val)
-        if dist < consts.MAX_DIST:
+	if dist < consts.MAX_DIST:
             return consts.SUCCESS, [wp_lat, wp_lon, wp_alt, wp_dur, wp_bearing]
         else:
             return consts.TOOFAR, [wp_lat, wp_lon, wp_alt, wp_dur, wp_bearing]

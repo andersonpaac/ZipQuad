@@ -200,6 +200,7 @@ def onlocchange(self,  attr_name, msg):
                 zipquad.bear   =    val['bearing']
                 zipquad.status = consts.ZIP_EN_ROUTE
 
+
     #Either waiting instruction, en route, atwp, override
     if zipquad.status != consts.ZIP_OVERRIDE and failsafe() == True:
         if zipquad.status != consts.ZIP_FS:
@@ -238,7 +239,7 @@ def onlocchange(self,  attr_name, msg):
         zipquad.status = consts.ZIP_WAIT_INST
         mavDrone.mode = VehicleMode("GUIDED")
         return
-
+    
 
 
 def get_distance_metres(aLocation1, aLocation2):
